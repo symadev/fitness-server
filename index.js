@@ -57,6 +57,60 @@ async function run() {
 
 
 
+    
+    // Middleware to check if user is admin
+const verifyAdmin = async (req, res, next) => {
+  const email = req.decoded.email;
+  const user = await userCollection.findOne({ email });
+
+  if (user?.role !== 'admin') {
+    return res.status(403).send({ message: 'forbidden: admin only' });
+  }
+
+  next();
+};
+
+
+
+
+
+
+    // Verify Token Middleware
+    const verifyToken = (req, res, next) => {
+      if (!req.headers.authorization) {
+        return res.status(401).send({ message: 'unauthorized access' });
+      }
+      const token = req.headers.authorization.split(' ')[1];
+      jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+        if (err) {
+          return res.status(401).send({ message: 'unauthorized access' });
+        }
+        req.decoded = decoded;
+        next();
+      });
+    };
+
+
+
+
+     app.get('/users/admin/:email', verifyToken, async (req, res) => {
+  const email = req.params.email;
+
+  // Make sure the token belongs to this email
+  if (req.decoded.email !== email) {
+    return res.status(403).send({ admin: false, message: 'Forbidden access' });
+  }
+
+  const user = await userCollection.findOne({ email });
+  const isAdmin = user?.role === 'admin';
+  res.send({ admin: isAdmin });
+});
+
+
+
+
+
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
