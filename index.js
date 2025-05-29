@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 require('dotenv').config();
+const jwt = require('jsonwebtoken');
+
 const port = process.env.PORT || 5000;
 
 
@@ -29,29 +31,7 @@ async function run() {
 
 
     const userCollection = client.db("Smartfit").collection("user");
-
-
-
-    // JWT Token generation
-    app.post('/jwt', async (req, res) => {
-      const user = req.body; // client থেকে আসা data
-      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
-      res.send({ token });
-
-
-    });
-
-
-
-
-
-
-    app.post('/user', async (req, res) => {
-      const user = req.body;
-      const result = await userCollection.insertOne(user);
-      res.send(result);
-
-    });
+    const workoutCollection = client.db("Smartfit").collection("workouts");
 
 
 
@@ -59,16 +39,16 @@ async function run() {
 
     
     // Middleware to check if user is admin
-const verifyAdmin = async (req, res, next) => {
-  const email = req.decoded.email;
-  const user = await userCollection.findOne({ email });
-
-  if (user?.role !== 'admin') {
-    return res.status(403).send({ message: 'forbidden: admin only' });
-  }
-
-  next();
-};
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email }
+      const user = await userCollection.findOne(query);
+      const isAdmin = user?.role === 'admin';
+      if (!isAdmin) {
+        return res.status(403).send({ message: 'forbidden  access' });
+      }
+      next();
+    }
 
 
 
@@ -92,21 +72,57 @@ const verifyAdmin = async (req, res, next) => {
 
 
 
-
-     app.get('/users/admin/:email', verifyToken, async (req, res) => {
-  const email = req.params.email;
-
-  // Make sure the token belongs to this email
-  if (req.decoded.email !== email) {
-    return res.status(403).send({ admin: false, message: 'Forbidden access' });
-  }
-
-  const user = await userCollection.findOne({ email });
-  const isAdmin = user?.role === 'admin';
-  res.send({ admin: isAdmin });
+    // Save a workout log
+app.post('/workouts', verifyToken, async (req, res) => {
+  const workout = req.body;
+  const result = await workoutCollection.insertOne(workout);
+  res.send(result);
 });
 
 
+
+
+app.get('/user/admin/:email', verifyToken, async (req, res) => {
+      const email = req.params.email;
+
+      if (req.decoded.email !== email) {
+        return res.status(403).send({ admin: false, message: 'Forbidden access' });
+      }
+
+      const user = await userCollection.findOne({ email });
+      const isAdmin = user?.role === 'admin';
+      res.send({ admin: isAdmin });
+    });
+
+
+
+
+    // JWT Token generation
+    app.post('/jwt', async (req, res) => {
+      const user = req.body; // client থেকে আসা data
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+      res.send({ token });
+
+
+    });
+
+
+
+
+
+
+    app.post('/user',async (req, res) => {
+      const user = req.body;
+      const result = await userCollection.insertOne(user);
+      res.send(result);
+
+    });
+
+
+
+
+
+    
 
 
 
