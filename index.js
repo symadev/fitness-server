@@ -43,6 +43,10 @@ async function run() {
     const db = client.db("Smartfit");
     const userCollection = db.collection("user");
     const workoutCollection = db.collection("workouts");
+    const sleepCollection = db.collection("sleeps");
+    const nutritionCollection = db.collection("nutritions");
+
+
 
 
     // ===== VERIFY ADMIN MIDDLEWARE =====
@@ -146,18 +150,92 @@ async function run() {
       res.send({ admin: isAdmin });
     });
 
-    // Save workout
-    app.post('/workouts', verifyToken, async (req, res) => {
-      const workout = req.body;
-      const result = await workoutCollection.insertOne(workout);
-      res.send(result);
-    });
 
-    // Get workouts of logged-in user
+
+
+
+
+
+    // POST: Add nutrition log
+app.post('/nutrition', verifyToken, async (req, res) => {
+  const nutrition = req.body;
+
+  // Force set userEmail from token
+  nutrition.userEmail = req.decoded.email;
+
+  const result = await nutritionCollection.insertOne(nutrition);
+  res.send(result);
+});
+
+// GET: Get nutrition logs of logged-in user
+app.get('/nutrition', verifyToken, async (req, res) => {
+  const email = req.decoded.email;
+  const nutritions = await nutritionCollection.find({ userEmail: email }).toArray();
+  res.send(nutritions);
+});
+
+// GET: For admin to get user logs
+app.get('/nutrition/:email', verifyToken, async (req, res) => {
+  const email = req.params.email;
+  if (req.decoded.email !== email) {
+    return res.status(403).send({ message: 'Forbidden access' });
+  }
+  const nutritions = await nutritionCollection.find({ userEmail: email }).toArray();
+  res.send(nutritions);
+});
+
+
+
+
+
+
+// POST: Add sleep log
+app.post("/sleep", verifyToken, async (req, res) => {
+  const sleep = req.body;
+  sleep.userEmail = req.decoded.email;
+ const result = await sleepCollection.insertOne(sleep);
+
+  res.send(result);
+});
+
+// GET: Get sleep logs for logged-in user
+app.get("/sleep", verifyToken, async (req, res) => {
+  const email = req.decoded.email;
+  
+   const sleeps = await sleepCollection.find({ userEmail: email }).toArray()
+  res.send(sleeps);
+});
+
+// GET: Get sleep logs for specific email (admin view)
+app.get("/sleep/:email", verifyToken, async (req, res) => {
+  const email = req.params.email;
+  if (req.decoded.email !== email) {
+    return res.status(403).send({ message: "Forbidden access" });
+  }
+  const sleeps = await sleepCollection.find({ userEmail: email }).toArray();
+  res.send(sleeps);
+});
+
+
+    // Save workout
+  // Save workout
+app.post('/workouts', verifyToken, async (req, res) => {
+  const workout = req.body;
+
+  // Always take the email from decoded token
+  workout.userEmail = req.decoded.email;
+
+  const result = await workoutCollection.insertOne(workout);
+  res.send(result);
+});
+
+
     app.get('/workouts', verifyToken, async (req, res) => {
-      const workouts = await workoutCollection.find({ userEmail: req.decoded.email }).toArray();
-      res.send(workouts);
-    });
+  const email = req.decoded.email;
+  const workouts = await workoutCollection.find({ userEmail: email }).toArray();
+  res.send(workouts);
+});
+
 
     // Get workouts by email (for admin)
     app.get('/workouts/:email', verifyToken, async (req, res) => {
@@ -173,7 +251,23 @@ async function run() {
   } catch (error) {
     console.error("Error connecting to MongoDB:", error);
   }
+
+
+
+
+
+  
 }
+
+
+
+
+
+
+
+
+
+
 
 run().catch(console.dir);
 
