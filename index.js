@@ -73,32 +73,15 @@ async function run() {
       res.send('SmartFit Server Running');
     });
 
-    // AI Chat API
-    app.post('/api/ai', async (req, res) => {
-      const prompt = req.body.prompt;
-      if (!prompt) return res.status(400).json({ message: "Prompt is required" });
 
-      try {
-        const response = await axios.post(
-          'https://api.openai.com/v1/chat/completions',
-          {
-            model: 'gpt-3.5-turbo',
-            messages: [{ role: 'user', content: prompt }],
-            temperature: 0.7,
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-        const generatedText = response.data.choices[0]?.message?.content || "No response from model";
-        res.json({ message: generatedText });
-      } catch (error) {
-        res.status(500).json({ message: "Failed to get AI response" });
-      }
-    });
+
+
+
+
+
+
+
+
 
     // Create user for login/register
     app.post('/user', async (req, res) => {
@@ -157,7 +140,7 @@ async function run() {
 
 
     // POST: Add nutrition log
-app.post('/nutrition', verifyToken, async (req, res) => {
+app.post('/nutritions', verifyToken, async (req, res) => {
   const nutrition = req.body;
 
   // Force set userEmail from token
@@ -168,14 +151,14 @@ app.post('/nutrition', verifyToken, async (req, res) => {
 });
 
 // GET: Get nutrition logs of logged-in user
-app.get('/nutrition', verifyToken, async (req, res) => {
+app.get('/nutritions', verifyToken, async (req, res) => {
   const email = req.decoded.email;
   const nutritions = await nutritionCollection.find({ userEmail: email }).toArray();
   res.send(nutritions);
 });
 
 // GET: For admin to get user logs
-app.get('/nutrition/:email', verifyToken, async (req, res) => {
+app.get('/nutritions/:email', verifyToken, async (req, res) => {
   const email = req.params.email;
   if (req.decoded.email !== email) {
     return res.status(403).send({ message: 'Forbidden access' });
@@ -190,7 +173,7 @@ app.get('/nutrition/:email', verifyToken, async (req, res) => {
 
 
 // POST: Add sleep log
-app.post("/sleep", verifyToken, async (req, res) => {
+app.post("/sleeps", verifyToken, async (req, res) => {
   const sleep = req.body;
   sleep.userEmail = req.decoded.email;
  const result = await sleepCollection.insertOne(sleep);
@@ -199,7 +182,7 @@ app.post("/sleep", verifyToken, async (req, res) => {
 });
 
 // GET: Get sleep logs for logged-in user
-app.get("/sleep", verifyToken, async (req, res) => {
+app.get("/sleeps", verifyToken, async (req, res) => {
   const email = req.decoded.email;
   
    const sleeps = await sleepCollection.find({ userEmail: email }).toArray()
@@ -207,7 +190,7 @@ app.get("/sleep", verifyToken, async (req, res) => {
 });
 
 // GET: Get sleep logs for specific email (admin view)
-app.get("/sleep/:email", verifyToken, async (req, res) => {
+app.get("/sleeps/:email", verifyToken, async (req, res) => {
   const email = req.params.email;
   if (req.decoded.email !== email) {
     return res.status(403).send({ message: "Forbidden access" });
@@ -224,6 +207,8 @@ app.post('/workouts', verifyToken, async (req, res) => {
 
   // Always take the email from decoded token
   workout.userEmail = req.decoded.email;
+   // Ensure date is set correctly
+  workout.date = workout.date || new Date().toISOString();
 
   const result = await workoutCollection.insertOne(workout);
   res.send(result);
@@ -253,19 +238,7 @@ app.post('/workouts', verifyToken, async (req, res) => {
   }
 
 
-
-
-
-  
 }
-
-
-
-
-
-
-
-
 
 
 
