@@ -27,7 +27,7 @@ const client = new MongoClient(uri, {
 // ==== MAIN FUNCTION ===
 async function run() {
   try {
-    await client.connect();
+    // await client.connect();
 
 
 
