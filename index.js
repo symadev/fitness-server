@@ -85,7 +85,7 @@ async function run() {
 
 
 
-    // ROUTES 
+  // ROUTES 
 
    // JWT Token
 app.post('/jwt', async (req, res) => {
@@ -110,9 +110,6 @@ app.post('/jwt', async (req, res) => {
 });
 
 
-
-
-
     // Create user for login/register
     app.post('/user', async (req, res) => {
       const user = req.body;
@@ -124,9 +121,6 @@ app.post('/jwt', async (req, res) => {
       const result = await userCollection.insertOne(user);
       res.send(result);
     });
-
-
-
 
 
 
@@ -153,6 +147,39 @@ app.post('/jwt', async (req, res) => {
 
 
 
+
+
+// Check if user is admin
+app.get('/user/admin/:email', verifyToken, async (req, res) => {
+  try {
+    const email = decodeURIComponent(req.params.email);
+    
+    console.log("Checking admin for:", email);
+    console.log("Token email:", req.decoded.email);
+
+    if (req.decoded.email !== email) {
+      return res.status(403).send({ admin: false, message: "Email mismatch" });
+    }
+
+    const user = await userCollection.findOne({ email });
+    
+    if (!user) {
+      return res.status(404).send({ admin: false, message: "User not found" });
+    }
+
+    const isAdmin = user?.role === 'admin';
+    console.log("User role:", user.role, "Is admin:", isAdmin);
+    
+    res.send({ admin: isAdmin });
+    
+  } catch (error) {
+    console.error("Admin check error:", error);
+    res.status(500).send({ admin: false, message: "Server error" });
+  }
+});
+
+
+
     // Get user info by email
     app.get('/user/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
@@ -166,10 +193,6 @@ app.post('/jwt', async (req, res) => {
         role: user.role || "user" 
       });
     });
-
-
-
-
 
 
     //user bookings
